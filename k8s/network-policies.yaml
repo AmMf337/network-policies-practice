@@ -1,0 +1,127 @@
+# ============================================
+# NETWORK POLICY: FRONTEND
+# ============================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-network-policy
+  namespace: frontend-ns
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  
+  # INGRESS: Permitir tráfico desde Internet (todos)
+  ingress:
+    - from: []
+      ports:
+        - protocol: TCP
+          port: 80
+  
+  # EGRESS: Permitir SOLO conexiones al backend (en otro namespace)
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: backend-ns
+          podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 3000
+    # DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+
+---
+# ============================================
+# NETWORK POLICY: BACKEND (API)
+# ============================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-network-policy
+  namespace: backend-ns
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+    - Egress
+  
+  # INGRESS: Permitir SOLO tráfico desde Frontend (en otro namespace)
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: frontend-ns
+          podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 3000
+  
+  # EGRESS: Permitir SOLO conexiones a la base de datos (en otro namespace)
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: database-ns
+          podSelector:
+            matchLabels:
+              app: database
+      ports:
+        - protocol: TCP
+          port: 5432
+    # DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+
+---
+# ============================================
+# NETWORK POLICY: DATABASE
+# ============================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: database-network-policy
+  namespace: database-ns
+spec:
+  podSelector:
+    matchLabels:
+      app: database
+  policyTypes:
+    - Ingress
+    - Egress
+  
+  # INGRESS: Permitir SOLO tráfico desde Backend (en otro namespace)
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: backend-ns
+          podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 5432
+  
+  # EGRESS: NO permitir conexiones salientes (máxima seguridad)
+  egress: []

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Frontend 🟢</title>
+</head>
+<body>
+  <h1>Frontend connected to Backend</h1>
+  <pre id="output">Loading...</pre>
+  <script>
+    async function getData() {
+      const res = await fetch('/api/');
+      const text = await res.text();
+      document.getElementById('output').innerText = text;
+    }
+    
+    // Llamar automáticamente al cargar la página
+    window.addEventListener('DOMContentLoaded', getData);
+  </script>
+</body>
+</html>
