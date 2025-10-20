@@ -222,7 +222,7 @@ The egress policy denied any outgoing request:
 ```yaml
  egress: []
 ```
-## Deployment
+## Deployment and service
 The first step in the deployment is to create the respective namespace for frontend, backend and database:
 ```yaml
 # ============================================
@@ -251,9 +251,75 @@ metadata:
   labels:
     name: database-ns
 ```
-Then define each deployment and it's respective service,for simplicity we will explain the common parts of the deployment firts and then puntual difference between them:
-
-- Frontend:
+Then define each deployment and it's respective service,for simplicity we will explain the common parts of the deployment and drrvice firts, then puntual difference between them:
+### Deployment
+```yaml
+metadata:
+  name: <deployment-name>
+  namespace: <namespace>
+```
+- **name**: Unique identifier for this deployment
+- **namespace**: Logical isolation where the deployment lives
+```yaml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <app-name>
+```
+- **replicas**: Number of pods running the app
+- **matchLabels**: The label that identify to which deployment the pod belongs to.
+```yaml
+spec:
+      containers:
+      - name: <container-name>
+        image: <image:tag>
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: <port>
+```
+- **name**: Name of the container
+- **image**: Docker image to use (e.g., nginx:alpine, postgres:15)
+- **imagePullPolicy**: Policy that controls how to access the image . It has three possible values:
+  - IfNotPresent = Only download if not already on the node
+  - Always = Always pull the latest image
+  - Never = Must exist locally
+- **containerPort**: Port where the application inside the container listens
+Some applications need a initial configuration of variables, those variables are define en the section **env**:
+```yaml
+     env:
+        - name: DB_HOST
+          value: "database-service.database-ns.svc.cluster.local"
+        - name: DB_USER
+          value: "postgres"
+```
+### Service
+```yaml
+metadata:
+  name: <service-name>
+  namespace: <namespace>
+```
+- **name**: Becomes the DNS name for the service
+```
+spec:
+  type: <type>
+```
+There are three types of service that determinates how it is exposed: ClusterIP,NodePort and LoadBalancer
+```yaml
+selector:
+    app: <app-name>
+```
+- Indicates the label of the pods where the services will send traffic to.
+```yaml
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30080  # Only for NodePort type
+```
+- **port**: Port where other services/pods connect to this service
+- **targetPort**: Port on the container where traffic is sent
+- **nodePort**: Port exposed on the physical node. Range: 30000-32767
+### Frontend:
 ```yaml
 # ============================================
 # DEPLOYMENT: FRONTEND
@@ -296,7 +362,7 @@ spec:
     nodePort: 30080
 ---
 ```
-- Backend:
+### Backend:
 ```yaml
 # ============================================
 # DEPLOYMENT: BACKEND
@@ -346,7 +412,7 @@ spec:
 
 ---
 ```
-- Database:
+### Database:
 ```yaml
 # ============================================
 # DEPLOYMENT: DATABASE
@@ -393,3 +459,4 @@ spec:
   - port: 5432
     targetPort: 5432
 ```
+As it seems the configuration is similar between the three elements but there are little differents like the frontend that has to be expose to internet so it has the type nodePort and the database that needs some variables defined in the extra section **env**.
