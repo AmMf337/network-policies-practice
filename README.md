@@ -251,7 +251,7 @@ metadata:
   labels:
     name: database-ns
 ```
-Then define each deployment and it's respective service,for simplicity we will explain the common parts of the deployment and drrvice:
+Then define each deployment and it's respective service,for simplicity we will explain the common parts of the deployment and service:
 ### Deployment
 ```yaml
 metadata:
